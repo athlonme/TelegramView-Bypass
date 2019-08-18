@@ -1,76 +1,90 @@
-import re, sys, threading, time
-# Iran-Cyber.Net
-try:
-    import requests
-except ImportError:
-    print '---------------------------------------------------'
-    print '[*] pip install requests'
-    print '   [-] you need to install requests Module'
-    sys.exit()
+import requests, re
+#Work in Python 2.7 - Work with socks4 proxies
 
-try:
-    PROXYx = open(sys.argv[1], 'r').read().splitlines()
-    url = sys.argv[2]
-except:
-    print('\n\n-----------------------------------------------------')
-    print('usage: python {} proxy.txt linkPost'.format(sys.argv[0]))
-    sys.exit()
-thread = []
-if url.startswith('http://'):
-    url = url.replace('http://', '')
-elif url.startswith('https://'):
-    url = url.replace('https://', '')
-else:
-    pass
 
-def StartSeen(url, PROXY):
+def SeenStartFunction(postLink, proxyz):
+    link = '{}{}'.format(postLink, '?embed=1')
     sess = requests.session()
-    sess.proxies = {'http': PROXY, 'https': PROXY}
-    agent = 'Mozilla/5.1 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)' \
-                                    ' Chrome/58.1.3029.110 Safari/537.36'
+    agent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows Phone OS 7.5; Trident/5.0; IEMobile/9.0; Xbox)'
+    proxy = {
+        'http': 'socks4://{}'.format(proxyz),    # Remove socks4 if you don't want use Socks!
+        'https': 'socks4://{}'.format(proxyz),
+    }
+
+    postData = {
+        '_rl': 1
+    }
+
+    MyHeader = {
+        'Host': 't.me',
+        'User-Agent': agent,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': postLink,
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+    }
     try:
-        getz = sess.get('http://httpbin.org/html', timeout=10, headers={'User-Agent': agent}).text
-        if 'Herman Melville - Moby-Dick' in getz:
-            headersx = {'User-Agent': agent}
-            aa2 = sess.get('http://' + url + '?embed=1', timeout=10, headers=headersx)
-            x = aa2.headers.get('Set-Cookie')
-            if 'data-view="' in aa2.text.encode('utf-8'):
-                headers = {'X-Requested-With': 'XMLHttpRequest',
-                           'User-Agent': agent,
-                           'Cookie': str(x).split(';')[0]}
-                Getviwe = 'http://' + url + '?embed=1&view=' + re.findall('data-view="(.*)">', aa2.text.encode('utf-8'))[0]
-                DoneRequest = sess.get(Getviwe, timeout=10, headers=headers)
-                if 'true' in DoneRequest.text.encode('utf-8'):
-                    print '{} --> Seen OK!'.format(PROXY)
-                    with open('GoodProxy.txt', 'a') as XX:
-                        XX.write(PROXY + '\n')
+        RequestStepOne = sess.get(link, proxies=proxy, headers=MyHeader, timeout=5)
+        Data = re.findall('data-view="(.*)"', RequestStepOne.text.encode('utf8'))[0].split('" data-view="')[0]
+
+        MyHeader2 = {
+            'Host': 't.me',
+            'User-Agent': agent,
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': link,
+            'Connection': 'keep-alive',
+            'Content-type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cookie': str(RequestStepOne.headers.get('Set-Cookie'))
+
+        }
+        try:
+            sess.post(link, proxies=proxy, headers=MyHeader2, data=postData, timeout=5)
+
+            MyHeader3 = {
+                'Host': 't.me',
+                'User-Agent': agent,
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Referer': link,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Connection': 'keep-alive',
+                'Cookie': str(RequestStepOne.headers.get('Set-Cookie'))
+
+            }
+            try:
+                SeenRequest = sess.get('https://t.me/v/?views={}'.format(Data), proxies=proxy, headers=MyHeader3, timeout=5)
+
+                if SeenRequest.text == 'true':
+                    print(' {} --> Seen Done!'.format(proxyz))
                 else:
-                    print '{} --> Seen No!'.format(PROXY)
-                    with open('SeenNoProxy.txt', 'a') as XX:
-                        XX.write(PROXY + '\n')
-            else:
-                print '{} --> Cant Get data-view'.format(PROXY)
-                with open('cantGetDAta-viewProxy.txt', 'a') as XX:
-                    XX.write(PROXY + '\n')
-        else:
-            print '{} --> Proxy Not Work'.format(PROXY)
-            with open('BadProxy.txt', 'a') as XX:
-                XX.write(PROXY + '\n')
-    except requests.exceptions.ReadTimeout:
-        print '{} --> Proxy Time Out!'.format(PROXY)
-        with open('BadProxy.txt', 'a') as XX:
-            XX.write(PROXY + '\n')
-    except requests.exceptions.ConnectionError:
-        print '{} --> Connection aborted!'.format(PROXY)
-        with open('BadProxy.txt', 'a') as XX:
-            XX.write(PROXY + '\n')
+                    print(' {} --> Not Seen'.format(proxyz))
+            except:
+                print(' {} --> error In Send Request in Step tree!'.format(proxyz))
+        except:
+            print(' {} --> error In Send Request in Step two!'.format(proxyz))
+    except:
+        print(' {} --> error In Send Request!'.format(proxyz))
 
-
-for proxy in PROXYx:
-    t = threading.Thread(target=StartSeen, args=(url, proxy))
-    t.start()
-    thread.append(t)
-    time.sleep(0.08)
-for j in thread:
-    j.join()
+if __name__ == '__main__':
+    import sys, threading, time
+    try:
+        proxylist = open(sys.argv[1], 'rb').read().splitlines()
+        url = sys.argv[2]
+    except:
+        print(' Python {} ProxyList.txt https://t.me/PostLink'.format(sys.argv[0]))
+        sys.exit()
+    thread = []
+    for proxy in proxylist:
+        t = threading.Thread(target=SeenStartFunction, args=(url, proxy))
+        t.start()
+        thread.append(t)
+        time.sleep(0.08)
+    for j in thread:
+        j.join()
 
