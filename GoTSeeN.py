@@ -1,6 +1,7 @@
 import requests, re
 #Work in Python 2.7 - Work with socks4 proxies
-
+# pip install requests
+# pip install requests[socks]
 
 def SeenStartFunction(postLink, proxyz):
     link = '{}{}'.format(postLink, '?embed=1')
